@@ -1,56 +1,31 @@
-use std::sync::Mutex;
-use colorsys::{ColorTransform, Rgb};
+mod socketio;
+mod data;
+
+// // Entry point for wasm
+// #[cfg(target_arch = "wasm32")]
+// use wasm_bindgen::prelude::*;
+//
+// #[cfg(target_arch = "wasm32")]
+// #[wasm_bindgen(start)]
+// pub fn start() -> Result<(), JsValue> {
+//     console_log::init_with_level(log::Level::Debug).unwrap();
+//
+//     use log::info;
+//     info!("Logging works!");
+//
+//     std::panic::set_hook(Box::new(console_error_panic_hook::hook));
+//     main();
+//     Ok(())
+// }
+
+use std::sync::{Arc, Mutex};
+use colorsys::{ColorTransform, Hsl, Rgb};
 use three_d::*;
 use serde::Deserialize;
 use itertools::Itertools;
 
-// Entry point for wasm
-#[cfg(target_arch = "wasm32")]
-use wasm_bindgen::prelude::*;
-
-#[cfg(target_arch = "wasm32")]
-#[wasm_bindgen(start)]
-pub fn start() -> Result<(), JsValue> {
-    console_log::init_with_level(log::Level::Debug).unwrap();
-
-    use log::info;
-    info!("Logging works!");
-
-    std::panic::set_hook(Box::new(console_error_panic_hook::hook));
-    main();
-    Ok(())
-}
-
-
-
-
-#[derive(Debug, Deserialize, Clone, Copy, PartialEq, Eq)]
-pub struct Position {
-    pub x: usize,
-    pub y: usize,
-}
-
-#[derive(Debug, Clone)]
-pub struct PreviousPos(pub Position);
-
-#[derive(Debug, Deserialize, Clone)]
-pub struct PlayerState {
-    pub alive: bool,
-    pub chat: Option<String>,
-    pub name: String,
-    pub pos: Position,
-    pub moves: Vec<Position>,
-}
-
-#[derive(Debug, Deserialize, Default, Clone)]
-pub struct GameState {
-    #[serde(default)]
-    pub version: usize,
-    pub height: usize,
-    pub width: usize,
-    pub id: String,
-    pub players: Vec<PlayerState>,
-}
+use crate::data::{ArcGameState, Position, GameState};
+use crate::socketio::client_thread;
 
 struct Drawing {
     context: Context,
@@ -91,12 +66,15 @@ impl Drawing {
     }
 
     fn pos(&self, x: f32, y: f32) -> Vector2<f32> {
+
         let x = GRID_MARGIN + (x * self.grid_size_screen()) as f32;
-        let y = GRID_MARGIN + (y * self.grid_size_screen()) as f32;
+        let y = GRID_MARGIN + ((self.field_size_in_tiles as f32 - y) * self.grid_size_screen()) as f32;
         vec2(x, y) * self.scale_factor
     }
 
-    fn draw_snek(&self, positions: Vec<Position>, base_color: Color) -> Vec<Gm<Circle, ColorMaterial>> {
+    fn draw_snek(&self, mut positions: Vec<Position>, base_color: Color) -> Vec<Gm<Circle, ColorMaterial>> {
+        positions.reverse();
+
         assert!(positions.len() > 0);
         let radius = self.grid_size_screen() * 0.8;
 
@@ -119,9 +97,17 @@ impl Drawing {
             let diff_x = (pos.x as f32 - next_pos.x as f32) / 2.0;
             let diff_y = (pos.y as f32 - next_pos.y as f32) / 2.0;
 
-            c.lighten(2.0);
+            let hsl: Hsl = c.clone().into();
+            if hsl.lightness() < 70.0 {
+                c.lighten(2.0);
+            }
 
-            if diff_x != 0.0 {
+
+            // let hsl: Hsl = c.clone().into();
+            // println!("lightness: {}", hsl.lightness());
+
+
+            if diff_x != 0.0 && diff_x.abs() <= 1.0 {
                 res.push(Gm::new(
                     Circle::new(
                         &self.context,
@@ -135,7 +121,7 @@ impl Drawing {
                 ));
             }
 
-            if diff_y != 0.0 {
+            if diff_y != 0.0 && diff_y.abs() <= 1.0 {
                 res.push(Gm::new(
                     Circle::new(
                         &self.context,
@@ -215,8 +201,8 @@ pub fn main() {
 
     let state = GameState {
         version: 1,
-        width: 8,
-        height: 8,
+        width: 9,
+        height: 9,
         id: "foobar".to_string(),
         players: vec![],
     };
@@ -235,14 +221,14 @@ pub fn main() {
 
     let grid_lines = d.draw_grid(state.width);
 
-    let snek = d.draw_snek(vec![
-        Position { x: 3, y: 3 },
-        Position { x: 3, y: 2 },
-        Position { x: 3, y: 1 },
-        Position { x: 2, y: 1 },
-        Position { x: 1, y: 1 },
-        Position { x: 0, y: 1 },
-    ], Color::BLUE);
+    let game_state: ArcGameState = Arc::new(Mutex::new(GameState::default()));
+    client_thread(game_state.clone());
+
+    let colors = vec![
+        Color::BLUE,
+        Color::RED,
+        Color::GREEN,
+    ];
 
     window.render_loop(move |frame_input| {
         // for event in frame_input.events.iter() {
@@ -276,6 +262,20 @@ pub fn main() {
         // }
 
 
+        let mut snek = vec![];
+
+        let state = game_state.lock().unwrap();
+        for (idx, player) in state.players.iter().enumerate() {
+            if !player.alive {
+                continue
+            }
+
+            let mut res = d.draw_snek(
+                player.moves.clone(),
+                colors.get(idx).unwrap().clone(),
+            );
+            snek.append(&mut res);
+        }
 
         let sneks = snek.iter()
             .flat_map(|m| m.into_iter());
