@@ -33,7 +33,7 @@ impl SnakeTextures {
         let mut head = texture.clone();
         head.transformation =
             Matrix3::from_translation(vec2(0.6, 0.8)) *
-                Matrix3::from_scale(0.2);
+                Matrix3::from_scale(0.199);
 
         // let mut head_right = texture.clone();
         // head_right.transformation =
@@ -62,7 +62,7 @@ impl SnakeTextures {
 
         let mut tail = texture.clone();
         tail.transformation =
-            Matrix3::from_translation(vec2(0.8, 0.2)) *
+            Matrix3::from_translation(vec2(0.6, 0.4)) *
                 Matrix3::from_scale(0.2);
 
         let mut right_turn = texture.clone();

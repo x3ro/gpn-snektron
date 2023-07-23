@@ -136,9 +136,9 @@ impl Direction {
     pub fn to_rotation(&self) -> Deg<f32> {
         match self {
             Direction::Up => Deg(0.0),
-            Direction::Right => Deg(90.0),
+            Direction::Right => Deg(-90.0),
             Direction::Down => Deg(180.0),
-            Direction::Left => Deg(-90.0),
+            Direction::Left => Deg(90.0),
         }
     }
 }
@@ -215,14 +215,17 @@ impl Drawing {
         let mut res = vec![];
 
         let mut first = true;
-        let mut tail_directon: Direction = Direction::Up;
+        let mut tail_direction: Direction = Direction::Up;
+
+        let mut dir1;
+        let mut dir2 = Direction::Up;
 
         for (prev, pos, next) in positions.iter().tuple_windows() {
-            let dir1 = Direction::from_pos(prev, pos);
-            let dir2 = Direction::from_pos(pos, next);
+            dir1 = Direction::from_pos(prev, pos);
+            dir2 = Direction::from_pos(pos, next);
 
             if first {
-                tail_directon = dir1.clone();
+                tail_direction = dir1.clone();
                 first = false;
             }
 
@@ -232,12 +235,20 @@ impl Drawing {
                     self.snake_textures.right_turn(),
                     Deg(-90.0),
                 ),
+                (Right, Up) => (
+                    self.snake_textures.left_turn(),
+                    Deg(-90.0),
+                ),
                 (Left, Down) => (
                     self.snake_textures.left_turn(),
                     Deg(90.0),
                 ),
                 (Down, Left) => (
                     self.snake_textures.right_turn(),
+                    Deg(180.0),
+                ),
+                (Down, Right) => (
+                    self.snake_textures.left_turn(),
                     Deg(180.0),
                 ),
                 (Left, Up) => (
@@ -356,7 +367,7 @@ impl Drawing {
             self.rect(
                 radius*2.0,
                 radius*2.0,
-                Rad(0.0),
+                dir2.to_rotation(),
                 &last
             ),
             self.snake_textures.head(),
@@ -367,7 +378,7 @@ impl Drawing {
             self.rect(
                 radius*2.0,
                 radius*2.0,
-                tail_directon.to_rotation(),
+                tail_direction.to_rotation(),
                 &first
             ),
             self.snake_textures.tail(),
