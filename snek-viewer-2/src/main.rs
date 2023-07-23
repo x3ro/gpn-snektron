@@ -1,6 +1,7 @@
 mod socketio;
 mod data;
 mod foo_material;
+mod snake_textures;
 
 // // Entry point for wasm
 // #[cfg(target_arch = "wasm32")]
@@ -27,6 +28,7 @@ use itertools::Itertools;
 use three_d_asset::io::RawAssets;
 
 use crate::data::{ArcGameState, Position, GameState};
+use crate::snake_textures::SnakeTextures;
 use crate::socketio::client_thread;
 
 struct SnekMaterial {}
@@ -70,7 +72,7 @@ struct Drawing {
     height: f32,
     field_size_in_tiles: usize,
     //snake_texture: CpuTexture,
-    textures: Textures,
+    snake_textures: SnakeTextures,
 }
 
 const GRID_MARGIN: f32 = 20.0;
@@ -148,16 +150,7 @@ impl Drawing {
 
             res.push(Gm::new(
                 geometry,
-                self.textures.head_left(),
-                // ColorMaterial {
-                //     texture: Some(texture.clone()),
-                //     is_transparent: true,
-                //     render_states: RenderStates {
-                //         blend: Blend::TRANSPARENCY,
-                //         ..Default::default()
-                //     },
-                //     ..Default::default()
-                // },
+                self.snake_textures.vertical(),
             ));
 
             let diff_x = (pos.x as f32 - next_pos.x as f32) / 2.0;
@@ -249,39 +242,39 @@ impl Drawing {
     }
 }
 
-struct Textures {
-    head_left: Texture2DRef,
-}
+// struct Textures {
+//     head_left: Texture2DRef,
+// }
 
-impl Textures {
-    pub fn new(context: &Context, atlas: &CpuTexture) -> Self {
-        let mut texture = Texture2DRef::from_cpu_texture(
-            context,
-            &atlas.to_linear_srgb().unwrap(),
-        );
-
-        let mut head_left = texture.clone();
-        head_left.transformation =
-            Matrix3::from_translation(vec2(0.6, 0.6)) *
-                Matrix3::from_scale(0.2);
-
-        Textures {
-            head_left,
-        }
-    }
-
-    pub fn head_left(&self) -> ColorMaterial {
-        ColorMaterial {
-            texture: Some(self.head_left.clone()),
-            is_transparent: true,
-            render_states: RenderStates {
-                blend: Blend::TRANSPARENCY,
-                ..Default::default()
-            },
-            ..Default::default()
-        }
-    }
-}
+// impl Textures {
+//     pub fn new(context: &Context, atlas: &CpuTexture) -> Self {
+//         let mut texture = Texture2DRef::from_cpu_texture(
+//             context,
+//             &atlas.to_linear_srgb().unwrap(),
+//         );
+//
+//         let mut head_left = texture.clone();
+//         head_left.transformation =
+//             Matrix3::from_translation(vec2(0.6, 0.6)) *
+//                 Matrix3::from_scale(0.2);
+//
+//         Textures {
+//             head_left,
+//         }
+//     }
+//
+//     pub fn head_left(&self) -> ColorMaterial {
+//         ColorMaterial {
+//             texture: Some(self.head_left.clone()),
+//             is_transparent: true,
+//             render_states: RenderStates {
+//                 blend: Blend::TRANSPARENCY,
+//                 ..Default::default()
+//             },
+//             ..Default::default()
+//         }
+//     }
+// }
 
 pub fn main() {
     let window = Window::new(WindowSettings {
@@ -302,46 +295,48 @@ pub fn main() {
     let scale_factor = window.device_pixel_ratio();
     let (width, height) = window.size();
 
-    let mut loaded = three_d_asset::io::load(&[
-        "assets/snake-graphics.png",
-        "assets/uvchecker.png",
-    ])
-        .unwrap();
+    // let mut loaded = three_d_asset::io::load(&[
+    //     "assets/snake-graphics.png",
+    //     "assets/uvchecker.png",
+    // ])
+    //     .unwrap();
 
-    let cpu_texture: CpuTexture = loaded.deserialize("snake-graphics").unwrap();
-    let mut texture = Texture2DRef::from_cpu_texture(
-        &context,
-        &cpu_texture.to_linear_srgb().unwrap(),
-    );
-    texture.transformation =
-        Matrix3::from_translation(vec2(0.0, 0.8)) *
-        Matrix3::from_scale(0.2);
-
-
+    // let cpu_texture: CpuTexture = loaded.deserialize("snake-graphics").unwrap();
+    // let mut texture = Texture2DRef::from_cpu_texture(
+    //     &context,
+    //     &cpu_texture.to_linear_srgb().unwrap(),
+    // );
+    // texture.transformation =
+    //     Matrix3::from_translation(vec2(0.0, 0.8)) *
+    //     Matrix3::from_scale(0.2);
 
 
+    let snake_textures = SnakeTextures::new(&context);
 
-    let mut obj = Gm::new(
-        Rectangle::new(
-            &context,
-            ((width as f32/2.0) * scale_factor, (height as f32/2.0) * scale_factor),
-            Rad(0.0),
-            1000.0,
-            1000.0,
-        ),
-        ColorMaterial {
-            //color: Color::BLACK,
-            texture: Some(texture),
-            is_transparent: true,
-            ..Default::default()
-        }
-    );
+
+
+
+    // let mut obj = Gm::new(
+    //     Rectangle::new(
+    //         &context,
+    //         ((width as f32/2.0) * scale_factor, (height as f32/2.0) * scale_factor),
+    //         Rad(0.0),
+    //         1000.0,
+    //         1000.0,
+    //     ),
+    //     ColorMaterial {
+    //         //color: Color::BLACK,
+    //         texture: Some(texture),
+    //         is_transparent: true,
+    //         ..Default::default()
+    //     }
+    // );
     //obj.material.render_states.cull = Cull::Back;
     // let foo = &obj.geometry;
     // obj.material.render_states.blend = Blend::TRANSPARENCY;
 
 
-    let textures = Textures::new(&context, &cpu_texture);
+    //let textures = Textures::new(&context, &cpu_texture);
 
     let d = Drawing {
         context,
@@ -350,7 +345,7 @@ pub fn main() {
         height: height as f32,
         field_size_in_tiles: state.width,
         //snake_texture: cpu_texture,
-        textures,
+        snake_textures,
     };
 
     let grid_lines = d.draw_grid(state.width);
