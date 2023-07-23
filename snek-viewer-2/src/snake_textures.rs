@@ -84,8 +84,9 @@ impl SnakeTextures {
         }
     }
 
-    fn material(texture: &Texture2DRef) -> ColorMaterial {
+    fn material(texture: &Texture2DRef, color: Color) -> ColorMaterial {
         ColorMaterial {
+            color,
             texture: Some(texture.clone()),
             is_transparent: true,
             render_states: RenderStates {
@@ -96,23 +97,23 @@ impl SnakeTextures {
         }
     }
 
-    pub fn head(&self) -> ColorMaterial {
-        Self::material(&self.head)
+    pub fn head(&self, color: Color) -> ColorMaterial {
+        Self::material(&self.head, color)
     }
 
-    pub fn right_turn(&self) -> ColorMaterial {
-        Self::material(&self.right_turn)
+    pub fn right_turn(&self, color: Color) -> ColorMaterial {
+        Self::material(&self.right_turn, color)
     }
 
-    pub fn left_turn(&self) -> ColorMaterial {
-        Self::material(&self.left_turn)
+    pub fn left_turn(&self, color: Color) -> ColorMaterial {
+        Self::material(&self.left_turn, color)
     }
 
-    pub fn body(&self) -> ColorMaterial {
-        Self::material(&self.body)
+    pub fn body(&self, color: Color) -> ColorMaterial {
+        Self::material(&self.body, color)
     }
 
-    pub fn tail(&self) -> ColorMaterial {
-        Self::material(&self.tail)
+    pub fn tail(&self, color: Color) -> ColorMaterial {
+        Self::material(&self.tail, color)
     }
 }

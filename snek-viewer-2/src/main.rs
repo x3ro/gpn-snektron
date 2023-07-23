@@ -202,39 +202,39 @@ impl Drawing {
             use Direction::*;
             let (material, rotation) = match (&dir1, &dir2) {
                 (Right, Down) => (
-                    self.snake_textures.right_turn(),
+                    self.snake_textures.right_turn(c.to_color()),
                     Deg(-90.0),
                 ),
                 (Right, Up) => (
-                    self.snake_textures.left_turn(),
+                    self.snake_textures.left_turn(c.to_color()),
                     Deg(-90.0),
                 ),
                 (Left, Down) => (
-                    self.snake_textures.left_turn(),
+                    self.snake_textures.left_turn(c.to_color()),
                     Deg(90.0),
                 ),
                 (Down, Left) => (
-                    self.snake_textures.right_turn(),
+                    self.snake_textures.right_turn(c.to_color()),
                     Deg(180.0),
                 ),
                 (Down, Right) => (
-                    self.snake_textures.left_turn(),
+                    self.snake_textures.left_turn(c.to_color()),
                     Deg(180.0),
                 ),
                 (Left, Up) => (
-                    self.snake_textures.right_turn(),
+                    self.snake_textures.right_turn(c.to_color()),
                     Deg(90.0),
                 ),
                 (Up, Left) => (
-                    self.snake_textures.left_turn(),
+                    self.snake_textures.left_turn(c.to_color()),
                     Deg(0.0),
                 ),
                 (Up, Right) => (
-                    self.snake_textures.right_turn(),
+                    self.snake_textures.right_turn(c.to_color()),
                     Deg(0.0),
                 ),
                 (_, _) => (
-                    self.snake_textures.body(),
+                    self.snake_textures.body(c.to_color()),
                     dir1.to_rotation(),
                 )
             };
@@ -263,7 +263,7 @@ impl Drawing {
                             snake_width,
                             snake_width * 0.25,
                         ),
-                        self.snake_textures.body(),
+                        self.snake_textures.body(c.to_color()),
                     ));
                 }
 
@@ -276,7 +276,7 @@ impl Drawing {
                             snake_width,
                             snake_width * 0.25,
                         ),
-                        self.snake_textures.body(),
+                        self.snake_textures.body(c.to_color()),
                     ));
                 }
 
@@ -289,7 +289,7 @@ impl Drawing {
                             snake_width,
                             snake_width * 0.25,
                         ),
-                        self.snake_textures.body(),
+                        self.snake_textures.body(c.to_color()),
                     ));
                 }
 
@@ -302,7 +302,7 @@ impl Drawing {
                             snake_width,
                             snake_width * 0.25,
                         ),
-                        self.snake_textures.body(),
+                        self.snake_textures.body(c.to_color()),
                     ));
                 }
 
@@ -353,7 +353,7 @@ impl Drawing {
                 dir2.to_rotation(),
                 &last
             ),
-            self.snake_textures.head(),
+            self.snake_textures.head(c.to_color()),
         ));
 
         let first = positions.first().unwrap();
@@ -364,7 +364,7 @@ impl Drawing {
                 tail_direction.to_rotation(),
                 &first
             ),
-            self.snake_textures.tail(),
+            self.snake_textures.tail(c.to_color()),
         ));
 
         res
