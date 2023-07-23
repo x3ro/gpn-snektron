@@ -4,6 +4,8 @@ pub struct SnakeTextures {
     head: Texture2DRef,
     body: Texture2DRef,
     tail: Texture2DRef,
+    left_turn: Texture2DRef,
+    right_turn: Texture2DRef,
 
     // tail_up: Texture2DRef,
     // tail_right: Texture2DRef,
@@ -60,13 +62,25 @@ impl SnakeTextures {
 
         let mut tail = texture.clone();
         tail.transformation =
-            Matrix3::from_translation(vec2(0.6, 0.4)) *
+            Matrix3::from_translation(vec2(0.8, 0.2)) *
+                Matrix3::from_scale(0.2);
+
+        let mut right_turn = texture.clone();
+        right_turn.transformation =
+            Matrix3::from_translation(vec2(0.0, 0.8)) *
+                Matrix3::from_scale(0.2);
+
+        let mut left_turn = texture.clone();
+        left_turn.transformation =
+            Matrix3::from_translation(vec2(0.4, 0.8)) *
                 Matrix3::from_scale(0.2);
 
         Self {
             head,
             body,
             tail,
+            right_turn,
+            left_turn,
         }
     }
 
@@ -84,6 +98,14 @@ impl SnakeTextures {
 
     pub fn head(&self) -> ColorMaterial {
         Self::material(&self.head)
+    }
+
+    pub fn right_turn(&self) -> ColorMaterial {
+        Self::material(&self.right_turn)
+    }
+
+    pub fn left_turn(&self) -> ColorMaterial {
+        Self::material(&self.left_turn)
     }
 
     pub fn body(&self) -> ColorMaterial {
