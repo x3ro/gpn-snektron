@@ -1,5 +1,6 @@
 mod socketio;
 mod data;
+mod foo_material;
 
 // // Entry point for wasm
 // #[cfg(target_arch = "wasm32")]
@@ -23,9 +24,44 @@ use colorsys::{ColorTransform, Hsl, Rgb};
 use three_d::*;
 use serde::Deserialize;
 use itertools::Itertools;
+use three_d_asset::io::RawAssets;
 
 use crate::data::{ArcGameState, Position, GameState};
 use crate::socketio::client_thread;
+
+struct SnekMaterial {}
+
+impl Material for SnekMaterial {
+    fn fragment_shader_source(&self, _lights: &[&dyn Light]) -> String {
+        include_str!("snek.frag").to_string()
+    }
+
+    fn fragment_attributes(&self) -> FragmentAttributes {
+        FragmentAttributes {
+            position: true,
+            uv: true,
+            ..FragmentAttributes::NONE
+        }
+    }
+
+    fn use_uniforms(&self, _program: &Program, _camera: &Camera, _lights: &[&dyn Light]) {}
+    fn render_states(&self) -> RenderStates {
+        RenderStates {
+            cull: Cull::Back,
+            blend: Blend::TRANSPARENCY,
+            depth_test: DepthTest::Always,
+            write_mask: WriteMask::COLOR_AND_DEPTH,
+        }
+    }
+
+    fn material_type(&self) -> MaterialType {
+        MaterialType::Transparent
+    }
+
+    fn id(&self) -> u16 {
+        0b11u16
+    }
+}
 
 struct Drawing {
     context: Context,
@@ -33,6 +69,8 @@ struct Drawing {
     width: f32,
     height: f32,
     field_size_in_tiles: usize,
+    //snake_texture: CpuTexture,
+    textures: Textures,
 }
 
 const GRID_MARGIN: f32 = 20.0;
@@ -72,7 +110,7 @@ impl Drawing {
         vec2(x, y) * self.scale_factor
     }
 
-    fn draw_snek(&self, mut positions: Vec<Position>, base_color: Color) -> Vec<Gm<Circle, ColorMaterial>> {
+    fn draw_snek(&self, mut positions: Vec<Position>, base_color: Color) -> Vec<Gm<Rectangle, ColorMaterial>> {
         positions.reverse();
 
         assert!(positions.len() > 0);
@@ -80,18 +118,46 @@ impl Drawing {
 
         let mut c = Rgb::new(base_color.r as f64, base_color.g as f64, base_color.b as f64, None);
 
+        // let cpu_texture: CpuTexture = self.assets.deserialize("snake-graphics").unwrap();
+        // let mut texture = Texture2DRef::from_cpu_texture(
+        //     &self.context,
+        //     &self.snake_texture.to_linear_srgb().unwrap(),
+        // );
+        // texture.transformation =
+        //     Matrix3::from_translation(vec2(0.0, 0.8)) *
+        //         Matrix3::from_scale(0.2);
+
         let mut res = vec![];
         for (pos, next_pos) in positions.iter().tuple_windows() {
+            // res.push(Gm::new(
+            //     Circle::new(
+            //         &self.context,
+            //         self.pos(pos.x as f32 + 0.5, pos.y as f32 + 0.5),
+            //         radius,
+            //     ),
+            //     SnekMaterial {},
+            // ));
+
+            let geometry = Rectangle::new(
+                &self.context,
+                self.pos(pos.x as f32 + 0.5, pos.y as f32 + 0.5),
+                Rad(0.0),
+                2.0*radius,
+                2.0*radius,
+            );
+
             res.push(Gm::new(
-                Circle::new(
-                    &self.context,
-                    self.pos(pos.x as f32 + 0.5, pos.y as f32 + 0.5),
-                    radius,
-                ),
-                ColorMaterial {
-                    color: c.to_color(),
-                    ..Default::default()
-                },
+                geometry,
+                self.textures.head_left(),
+                // ColorMaterial {
+                //     texture: Some(texture.clone()),
+                //     is_transparent: true,
+                //     render_states: RenderStates {
+                //         blend: Blend::TRANSPARENCY,
+                //         ..Default::default()
+                //     },
+                //     ..Default::default()
+                // },
             ));
 
             let diff_x = (pos.x as f32 - next_pos.x as f32) / 2.0;
@@ -107,47 +173,38 @@ impl Drawing {
             // println!("lightness: {}", hsl.lightness());
 
 
-            if diff_x != 0.0 && diff_x.abs() <= 1.0 {
-                res.push(Gm::new(
-                    Circle::new(
-                        &self.context,
-                        self.pos(pos.x as f32  + 0.5 - diff_x, pos.y as f32 + 0.5),
-                        radius,
-                    ),
-                    ColorMaterial {
-                        color: c.to_color(),
-                        ..Default::default()
-                    },
-                ));
-            }
-
-            if diff_y != 0.0 && diff_y.abs() <= 1.0 {
-                res.push(Gm::new(
-                    Circle::new(
-                        &self.context,
-                        self.pos(pos.x as f32  + 0.5, pos.y as f32 + 0.5 - diff_y),
-                        radius,
-                    ),
-                    ColorMaterial {
-                        color: c.to_color(),
-                        ..Default::default()
-                    },
-                ));
-            }
+            // if diff_x != 0.0 && diff_x.abs() <= 1.0 {
+            //     res.push(Gm::new(
+            //         Circle::new(
+            //             &self.context,
+            //             self.pos(pos.x as f32  + 0.5 - diff_x, pos.y as f32 + 0.5),
+            //             radius,
+            //         ),
+            //         SnekMaterial {},
+            //     ));
+            // }
+            //
+            // if diff_y != 0.0 && diff_y.abs() <= 1.0 {
+            //     res.push(Gm::new(
+            //         Circle::new(
+            //             &self.context,
+            //             self.pos(pos.x as f32  + 0.5, pos.y as f32 + 0.5 - diff_y),
+            //             radius,
+            //         ),
+            //         SnekMaterial {},
+            //     ));
+            // }
         }
 
-        let last = positions.last().unwrap();
-        res.push(Gm::new(
-            Circle::new(
-                &self.context,
-                self.pos(last.x as f32 + 0.5, last.y as f32 + 0.5),
-                radius,
-            ),
-            ColorMaterial {
-                color: c.to_color(),
-                ..Default::default()
-            },
-        ));
+        // let last = positions.last().unwrap();
+        // res.push(Gm::new(
+        //     Circle::new(
+        //         &self.context,
+        //         self.pos(last.x as f32 + 0.5, last.y as f32 + 0.5),
+        //         radius,
+        //     ),
+        //     SnekMaterial {},
+        // ));
 
         res
     }
@@ -192,6 +249,40 @@ impl Drawing {
     }
 }
 
+struct Textures {
+    head_left: Texture2DRef,
+}
+
+impl Textures {
+    pub fn new(context: &Context, atlas: &CpuTexture) -> Self {
+        let mut texture = Texture2DRef::from_cpu_texture(
+            context,
+            &atlas.to_linear_srgb().unwrap(),
+        );
+
+        let mut head_left = texture.clone();
+        head_left.transformation =
+            Matrix3::from_translation(vec2(0.6, 0.6)) *
+                Matrix3::from_scale(0.2);
+
+        Textures {
+            head_left,
+        }
+    }
+
+    pub fn head_left(&self) -> ColorMaterial {
+        ColorMaterial {
+            texture: Some(self.head_left.clone()),
+            is_transparent: true,
+            render_states: RenderStates {
+                blend: Blend::TRANSPARENCY,
+                ..Default::default()
+            },
+            ..Default::default()
+        }
+    }
+}
+
 pub fn main() {
     let window = Window::new(WindowSettings {
         title: "Shapes 2D!".to_string(),
@@ -211,12 +302,55 @@ pub fn main() {
     let scale_factor = window.device_pixel_ratio();
     let (width, height) = window.size();
 
+    let mut loaded = three_d_asset::io::load(&[
+        "assets/snake-graphics.png",
+        "assets/uvchecker.png",
+    ])
+        .unwrap();
+
+    let cpu_texture: CpuTexture = loaded.deserialize("snake-graphics").unwrap();
+    let mut texture = Texture2DRef::from_cpu_texture(
+        &context,
+        &cpu_texture.to_linear_srgb().unwrap(),
+    );
+    texture.transformation =
+        Matrix3::from_translation(vec2(0.0, 0.8)) *
+        Matrix3::from_scale(0.2);
+
+
+
+
+
+    let mut obj = Gm::new(
+        Rectangle::new(
+            &context,
+            ((width as f32/2.0) * scale_factor, (height as f32/2.0) * scale_factor),
+            Rad(0.0),
+            1000.0,
+            1000.0,
+        ),
+        ColorMaterial {
+            //color: Color::BLACK,
+            texture: Some(texture),
+            is_transparent: true,
+            ..Default::default()
+        }
+    );
+    //obj.material.render_states.cull = Cull::Back;
+    // let foo = &obj.geometry;
+    // obj.material.render_states.blend = Blend::TRANSPARENCY;
+
+
+    let textures = Textures::new(&context, &cpu_texture);
+
     let d = Drawing {
         context,
         scale_factor,
         width: width as f32,
         height: height as f32,
         field_size_in_tiles: state.width,
+        //snake_texture: cpu_texture,
+        textures,
     };
 
     let grid_lines = d.draw_grid(state.width);
@@ -229,6 +363,10 @@ pub fn main() {
         Color::RED,
         Color::GREEN,
     ];
+
+
+
+
 
     window.render_loop(move |frame_input| {
         // for event in frame_input.events.iter() {
@@ -284,17 +422,26 @@ pub fn main() {
             .iter()
             .flat_map(|m| m.into_iter());
 
-        let objects = grids.chain(sneks);
+        //let objects = sneks.chain(grids);
+
+        frame_input
+            .screen()
+            .render(&camera2d(frame_input.viewport),
+                    grids,
+                    &[],);
 
         frame_input
             .screen()
             // Solarized-light background color
             .clear(ClearState::color_and_depth(0.99, 0.96, 0.89, 1.0, 1.0))
+            //.clear(ClearState::color_and_depth(0.0, 0.0, 0.0, 1.0, 1.0))
             .render(
                 &camera2d(frame_input.viewport),
-                objects,
+                sneks,
                 &[],
             );
+
+
 
         FrameOutput::default()
     });
