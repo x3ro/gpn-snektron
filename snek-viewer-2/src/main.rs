@@ -20,6 +20,7 @@ mod snake_textures;
 //     Ok(())
 // }
 
+use std::fs;
 use std::sync::{Arc, Mutex};
 use colorsys::{ColorTransform, Hsl, Rgb};
 use three_d::*;
@@ -140,6 +141,8 @@ impl Drawing {
         //         Matrix3::from_scale(0.2);
 
         let mut res = vec![];
+
+
         for (pos, next_pos) in positions.iter().tuple_windows() {
             // res.push(Gm::new(
             //     Circle::new(
@@ -363,8 +366,11 @@ pub fn main() {
 
     let grid_lines = d.draw_grid(state.width);
 
-    let game_state: ArcGameState = Arc::new(Mutex::new(GameState::default()));
-    client_thread(game_state.clone());
+    let test_state: GameState = serde_json::from_str(include_str!("../assets/test.json")).unwrap();
+    let game_state: ArcGameState = Arc::new(Mutex::new(test_state));
+
+    // let game_state: ArcGameState = Arc::new(Mutex::new(GameState::default()));
+    // client_thread(game_state.clone());
 
     let colors = vec![
         Color::BLUE,

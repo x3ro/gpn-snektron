@@ -39,7 +39,7 @@ pub fn client_thread(ticks: ArcGameState) -> JoinHandle<()> {
                     let mut gsv = game_state_value_b.lock().unwrap();
                     json_patch::patch(&mut gsv, &patch).unwrap();
 
-                    //println!("{}", serde_json::to_string(gsv.deref()).unwrap());
+                    println!("{}\n\n", serde_json::to_string(gsv.deref()).unwrap());
 
                     // Parse the patched Value into the new GameState and bump the version
                     let mut state: GameState =
