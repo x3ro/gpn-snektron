@@ -1,18 +1,16 @@
 use three_d::*;
 
 pub struct SnakeTextures {
-    head_up: Texture2DRef,
-    head_right: Texture2DRef,
-    head_down: Texture2DRef,
-    head_left: Texture2DRef,
+    head: Texture2DRef,
+    body: Texture2DRef,
+    tail: Texture2DRef,
 
     // tail_up: Texture2DRef,
     // tail_right: Texture2DRef,
     // tail_down: Texture2DRef,
     // tail_left: Texture2DRef,
 
-    horizontal: Texture2DRef,
-    vertical: Texture2DRef,
+
 
 }
 
@@ -30,44 +28,45 @@ impl SnakeTextures {
             &cpu_texture.to_linear_srgb().unwrap(),
         );
 
-        let mut head_up = texture.clone();
-        head_up.transformation =
+        let mut head = texture.clone();
+        head.transformation =
             Matrix3::from_translation(vec2(0.6, 0.8)) *
                 Matrix3::from_scale(0.2);
 
-        let mut head_right = texture.clone();
-        head_right.transformation =
-            Matrix3::from_translation(vec2(0.8, 0.8)) *
-                Matrix3::from_scale(0.2);
+        // let mut head_right = texture.clone();
+        // head_right.transformation =
+        //     Matrix3::from_translation(vec2(0.8, 0.8)) *
+        //         Matrix3::from_scale(0.2);
+        //
+        // let mut head_down = texture.clone();
+        // head_down.transformation =
+        //     Matrix3::from_translation(vec2(0.8, 0.6)) *
+        //         Matrix3::from_scale(0.2);
+        //
+        // let mut head_left = texture.clone();
+        // head_left.transformation =
+        //     Matrix3::from_translation(vec2(0.6, 0.6)) *
+        //         Matrix3::from_scale(0.2);
 
-        let mut head_down = texture.clone();
-        head_down.transformation =
-            Matrix3::from_translation(vec2(0.8, 0.6)) *
-                Matrix3::from_scale(0.2);
+        // let mut horizontal = texture.clone();
+        // horizontal.transformation =
+        //     Matrix3::from_translation(vec2(0.2, 0.8)) *
+        //         Matrix3::from_scale(0.2);
 
-        let mut head_left = texture.clone();
-        head_left.transformation =
-            Matrix3::from_translation(vec2(0.6, 0.6)) *
-                Matrix3::from_scale(0.2);
-
-        let mut horizontal = texture.clone();
-        horizontal.transformation =
-            Matrix3::from_translation(vec2(0.2, 0.8)) *
-                Matrix3::from_scale(0.2);
-
-        let mut vertical = texture.clone();
-        vertical.transformation =
+        let mut body = texture.clone();
+        body.transformation =
             Matrix3::from_translation(vec2(0.4, 0.6)) *
                 Matrix3::from_scale(0.2);
 
-        Self {
-            head_up,
-            head_right,
-            head_down,
-            head_left,
+        let mut tail = texture.clone();
+        tail.transformation =
+            Matrix3::from_translation(vec2(0.6, 0.4)) *
+                Matrix3::from_scale(0.2);
 
-            horizontal,
-            vertical,
+        Self {
+            head,
+            body,
+            tail,
         }
     }
 
@@ -83,27 +82,15 @@ impl SnakeTextures {
         }
     }
 
-    pub fn head_up(&self) -> ColorMaterial {
-        Self::material(&self.head_up)
+    pub fn head(&self) -> ColorMaterial {
+        Self::material(&self.head)
     }
 
-    pub fn head_right(&self) -> ColorMaterial {
-        Self::material(&self.head_right)
+    pub fn body(&self) -> ColorMaterial {
+        Self::material(&self.body)
     }
 
-    pub fn head_down(&self) -> ColorMaterial {
-        Self::material(&self.head_down)
-    }
-
-    pub fn head_left(&self) -> ColorMaterial {
-        Self::material(&self.head_left)
-    }
-
-    pub fn horizontal(&self) -> ColorMaterial {
-        Self::material(&self.horizontal)
-    }
-
-    pub fn vertical(&self) -> ColorMaterial {
-        Self::material(&self.vertical)
+    pub fn tail(&self) -> ColorMaterial {
+        Self::material(&self.tail)
     }
 }

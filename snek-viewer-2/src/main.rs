@@ -112,10 +112,20 @@ impl Drawing {
         vec2(x, y) * self.scale_factor
     }
 
-    fn draw_snek(&self, mut positions: Vec<Position>, base_color: Color) -> Vec<Gm<Rectangle, ColorMaterial>> {
-        positions.reverse();
+    fn rect(&self, width: f32, height: f32, pos: &Position) -> Rectangle {
+        Rectangle::new(
+            &self.context,
+            self.pos(pos.x as f32 + 0.5, pos.y as f32 + 0.5),
+            Rad(0.0),
+            width,
+            height,
+        )
+    }
 
+    fn draw_snek(&self, mut positions: Vec<Position>, base_color: Color) -> Vec<Gm<Rectangle, ColorMaterial>> {
+        //positions.reverse();
         assert!(positions.len() > 0);
+
         let radius = self.grid_size_screen() * 0.8;
 
         let mut c = Rgb::new(base_color.r as f64, base_color.g as f64, base_color.b as f64, None);
@@ -140,26 +150,27 @@ impl Drawing {
             //     SnekMaterial {},
             // ));
 
-            let geometry = Rectangle::new(
-                &self.context,
-                self.pos(pos.x as f32 + 0.5, pos.y as f32 + 0.5),
-                Rad(0.0),
-                2.0*radius,
-                2.0*radius,
-            );
+            // let geometry = Rectangle::new(
+            //     &self.context,
+            //     self.pos(pos.x as f32 + 0.5, pos.y as f32 + 0.5),
+            //     Rad(0.0),
+            //     2.0*radius,
+            //     2.0*radius,
+            // );
+
 
             res.push(Gm::new(
-                geometry,
-                self.snake_textures.vertical(),
+                self.rect(2.0*radius, 2.0*radius, pos),
+                self.snake_textures.body(),
             ));
 
             let diff_x = (pos.x as f32 - next_pos.x as f32) / 2.0;
             let diff_y = (pos.y as f32 - next_pos.y as f32) / 2.0;
 
-            let hsl: Hsl = c.clone().into();
-            if hsl.lightness() < 70.0 {
-                c.lighten(2.0);
-            }
+            // let hsl: Hsl = c.clone().into();
+            // if hsl.lightness() < 70.0 {
+            //     c.lighten(2.0);
+            // }
 
 
             // let hsl: Hsl = c.clone().into();
@@ -189,15 +200,17 @@ impl Drawing {
             // }
         }
 
-        // let last = positions.last().unwrap();
-        // res.push(Gm::new(
-        //     Circle::new(
-        //         &self.context,
-        //         self.pos(last.x as f32 + 0.5, last.y as f32 + 0.5),
-        //         radius,
-        //     ),
-        //     SnekMaterial {},
-        // ));
+        let last = positions.last().unwrap();
+
+        res.push(Gm::new(
+            self.rect(radius*2.0, radius*2.0, &last),
+            // Circle::new(
+            //     &self.context,
+            //     self.pos(last.x as f32 + 0.5, last.y as f32 + 0.5),
+            //     radius,
+            // ),
+            self.snake_textures.head(),
+        ));
 
         res
     }
