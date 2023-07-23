@@ -3,7 +3,7 @@
     "id": "ao7l59tpan8",
     "players": [
       {
-        "alive": true,
+        "alive": false,
         "id": 0,
         "moves": [
           {
@@ -105,7 +105,7 @@
         }
       },
       {
-        "alive": true,
+        "alive": false,
         "id": 2,
         "moves": [
           {

@@ -20,8 +20,9 @@ mod snake_textures;
 //     Ok(())
 // }
 
-use std::fs;
+use std::{fs, thread};
 use std::sync::{Arc, Mutex};
+use std::time::Duration;
 use colorsys::{ColorTransform, Hsl, Rgb};
 use three_d::*;
 use serde::Deserialize;
@@ -93,6 +94,45 @@ impl RgbExt for Rgb {
     }
 }
 
+#[derive(Debug)]
+enum Direction {
+    Up,
+    Right,
+    Down,
+    Left,
+}
+
+impl Direction {
+    pub fn from_pos(pos0: &Position, pos1: &Position) -> Self {
+        let delta_x = (pos1.x as f32) - (pos0.x as f32);
+        let delta_y = (pos1.y as f32) - (pos0.y as f32);
+
+        // We use this function to check orientation between moves.
+        // Every move can only be one tile, non-diagonally. As a result,
+        // one delta must be non-zero, but never both.
+        assert!(!delta_x.is_zero() ^ !delta_y.is_zero());
+
+        if delta_x > 0.0 {
+            Self::Right
+        } else if delta_x < 0.0 {
+            Self::Left
+        } else if delta_y > 0.0 {
+            Self::Down
+        } else {
+            Self::Up
+        }
+    }
+
+    pub fn to_rotation(&self) -> Deg<f32> {
+        match self {
+            Direction::Up => Deg(0.0),
+            Direction::Right => Deg(90.0),
+            Direction::Down => Deg(180.0),
+            Direction::Left => Deg(-90.0),
+        }
+    }
+}
+
 impl Drawing {
     fn field_size_screen(&self) -> f32 {
         if self.width > self.height {
@@ -113,17 +153,39 @@ impl Drawing {
         vec2(x, y) * self.scale_factor
     }
 
-    fn rect(&self, width: f32, height: f32, pos: &Position) -> Rectangle {
+    fn rect(&self, width: f32, height: f32, rotation: impl Into<Radians>, pos: &Position) -> Rectangle {
         Rectangle::new(
             &self.context,
             self.pos(pos.x as f32 + 0.5, pos.y as f32 + 0.5),
-            Rad(0.0),
+            rotation,
             width,
             height,
         )
     }
 
+
+
     fn draw_snek(&self, mut positions: Vec<Position>, base_color: Color) -> Vec<Gm<Rectangle, ColorMaterial>> {
+        fn rotation(pos0: &Position, pos1: &Position) -> Deg<f32> {
+            let delta_x = (pos0.x as f32) - (pos1.x as f32);
+            let delta_y = (pos0.y as f32) - (pos1.y as f32);
+
+            // We use this function to check orientation between moves.
+            // Every move can only be one tile, non-diagonally. As a result,
+            // one delta must be non-zero, but never both.
+            assert!(!delta_x.is_zero() ^ !delta_y.is_zero());
+
+            if delta_x > 0.0 {
+                Deg(90.0)
+            } else if delta_x < 0.0 {
+                Deg(-90.0)
+            } else {
+                Deg(0.0)
+            }
+        }
+
+
+
         //positions.reverse();
         assert!(positions.len() > 0);
 
@@ -142,8 +204,42 @@ impl Drawing {
 
         let mut res = vec![];
 
+        let mut first = true;
 
-        for (pos, next_pos) in positions.iter().tuple_windows() {
+        for (pos, next_pos, pos2) in positions.iter().tuple_windows() {
+
+            let dir1 = Direction::from_pos(pos, next_pos);
+            let dir2 = Direction::from_pos(next_pos, pos2);
+
+            dbg!(pos);
+            dbg!(dir1, dir2);
+            println!("---");
+
+            // dbg!(pos, next_pos);
+            // dbg!(rotation(pos, next_pos));
+
+
+            if first {
+                // dbg!(pos);
+                // dbg!(next_pos);
+                res.push(Gm::new(
+                    self.rect(
+                        2.0*radius,
+                        2.0*radius,
+                        rotation(pos, next_pos),
+                        pos
+                    ),
+                    self.snake_textures.tail(),
+                ));
+                first = false;
+                continue;
+            }
+
+            // decide which texture to use?
+            // decide which rotation to use?
+
+
+
             // res.push(Gm::new(
             //     Circle::new(
             //         &self.context,
@@ -161,11 +257,16 @@ impl Drawing {
             //     2.0*radius,
             // );
 
-
             res.push(Gm::new(
-                self.rect(2.0*radius, 2.0*radius, pos),
+                self.rect(
+                    2.0*radius,
+                    2.0*radius,
+                    rotation(pos, next_pos),
+                    pos
+                ),
                 self.snake_textures.body(),
             ));
+
 
             let diff_x = (pos.x as f32 - next_pos.x as f32) / 2.0;
             let diff_y = (pos.y as f32 - next_pos.y as f32) / 2.0;
@@ -206,7 +307,7 @@ impl Drawing {
         let last = positions.last().unwrap();
 
         res.push(Gm::new(
-            self.rect(radius*2.0, radius*2.0, &last),
+            self.rect(radius*2.0, radius*2.0, Rad(0.0), &last),
             // Circle::new(
             //     &self.context,
             //     self.pos(last.x as f32 + 0.5, last.y as f32 + 0.5),
@@ -438,11 +539,7 @@ pub fn main() {
 
         //let objects = sneks.chain(grids);
 
-        frame_input
-            .screen()
-            .render(&camera2d(frame_input.viewport),
-                    grids,
-                    &[],);
+
 
         frame_input
             .screen()
@@ -455,7 +552,13 @@ pub fn main() {
                 &[],
             );
 
+        frame_input
+            .screen()
+            .render(&camera2d(frame_input.viewport),
+                    grids,
+                    &[],);
 
+        thread::sleep(Duration::from_millis(1000));
 
         FrameOutput::default()
     });
