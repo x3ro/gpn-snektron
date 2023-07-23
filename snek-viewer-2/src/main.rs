@@ -176,41 +176,11 @@ impl Drawing {
 
 
     fn draw_snek(&self, mut positions: Vec<Position>, base_color: Color) -> Vec<Gm<Rectangle, ColorMaterial>> {
-        // fn rotation(pos0: &Position, pos1: &Position) -> Deg<f32> {
-        //     let delta_x = (pos0.x as f32) - (pos1.x as f32);
-        //     let delta_y = (pos0.y as f32) - (pos1.y as f32);
-        //
-        //     // We use this function to check orientation between moves.
-        //     // Every move can only be one tile, non-diagonally. As a result,
-        //     // one delta must be non-zero, but never both.
-        //     assert!(!delta_x.is_zero() ^ !delta_y.is_zero());
-        //
-        //     if delta_x > 0.0 {
-        //         Deg(90.0)
-        //     } else if delta_x < 0.0 {
-        //         Deg(-90.0)
-        //     } else {
-        //         Deg(0.0)
-        //     }
-        // }
-
-
-
-        //positions.reverse();
         assert!(positions.len() > 0);
 
-        let radius = self.grid_size_screen() * 0.8;
+        let snake_width = self.grid_size_screen() * 0.8 *  self.scale_factor;
 
         let mut c = Rgb::new(base_color.r as f64, base_color.g as f64, base_color.b as f64, None);
-
-        // let cpu_texture: CpuTexture = self.assets.deserialize("snake-graphics").unwrap();
-        // let mut texture = Texture2DRef::from_cpu_texture(
-        //     &self.context,
-        //     &self.snake_texture.to_linear_srgb().unwrap(),
-        // );
-        // texture.transformation =
-        //     Matrix3::from_translation(vec2(0.0, 0.8)) *
-        //         Matrix3::from_scale(0.2);
 
         let mut res = vec![];
 
@@ -269,62 +239,75 @@ impl Drawing {
                 )
             };
 
-            dbg!(pos);
-            dbg!(&dir1, &dir2);
-            println!("---");
-
-            // dbg!(pos, next_pos);
-            // dbg!(rotation(pos, next_pos));
-
-
-            // if first {
-            //     // dbg!(pos);
-            //     // dbg!(next_pos);
-            //     res.push(Gm::new(
-            //         self.rect(
-            //             2.0*radius,
-            //             2.0*radius,
-            //             rotation(pos, next_pos),
-            //             pos
-            //         ),
-            //         self.snake_textures.tail(),
-            //     ));
-            //     first = false;
-            //     continue;
-            // }
-
-            // decide which texture to use?
-            // decide which rotation to use?
-
-
-
-            // res.push(Gm::new(
-            //     Circle::new(
-            //         &self.context,
-            //         self.pos(pos.x as f32 + 0.5, pos.y as f32 + 0.5),
-            //         radius,
-            //     ),
-            //     SnekMaterial {},
-            // ));
-
-            // let geometry = Rectangle::new(
-            //     &self.context,
-            //     self.pos(pos.x as f32 + 0.5, pos.y as f32 + 0.5),
-            //     Rad(0.0),
-            //     2.0*radius,
-            //     2.0*radius,
-            // );
+            // dbg!(pos);
+            // dbg!(&dir1, &dir2);
+            // println!("---");
 
             res.push(Gm::new(
                 self.rect(
-                    2.0*radius,
-                    2.0*radius,
+                    snake_width,
+                    snake_width,
                     rotation,
                     pos
                 ),
                 material,
             ));
 
+            match (dir1, dir2) {
+                (Left | Down, Left) => {
+                    res.push(Gm::new(
+                        Rectangle::new(
+                            &self.context,
+                            self.pos(pos.x as f32, pos.y as f32 + 0.5),
+                            Deg(90.0),
+                            snake_width,
+                            snake_width * 0.25,
+                        ),
+                        self.snake_textures.body(),
+                    ));
+                }
+
+                (Up | Down | Right, Right) => {
+                    res.push(Gm::new(
+                        Rectangle::new(
+                            &self.context,
+                            self.pos(pos.x as f32 + 1.0, pos.y as f32 + 0.5),
+                            Deg(90.0),
+                            snake_width,
+                            snake_width * 0.25,
+                        ),
+                        self.snake_textures.body(),
+                    ));
+                }
+
+                (_, Down) => {
+                    res.push(Gm::new(
+                        Rectangle::new(
+                            &self.context,
+                            self.pos(pos.x as f32 + 0.5, pos.y as f32 + 1.0),
+                            Deg(0.0),
+                            snake_width,
+                            snake_width * 0.25,
+                        ),
+                        self.snake_textures.body(),
+                    ));
+                }
+
+                (_, Up) => {
+                    res.push(Gm::new(
+                        Rectangle::new(
+                            &self.context,
+                            self.pos(pos.x as f32 + 0.5, pos.y as f32),
+                            Deg(0.0),
+                            snake_width,
+                            snake_width * 0.25,
+                        ),
+                        self.snake_textures.body(),
+                    ));
+                }
+
+                _ => {}
+            }
 
             // let diff_x = (pos.x as f32 - next_pos.x as f32) / 2.0;
             // let diff_y = (pos.y as f32 - next_pos.y as f32) / 2.0;
@@ -365,8 +348,8 @@ impl Drawing {
         let last = positions.last().unwrap();
         res.push(Gm::new(
             self.rect(
-                radius*2.0,
-                radius*2.0,
+                snake_width,
+                snake_width,
                 dir2.to_rotation(),
                 &last
             ),
@@ -376,8 +359,8 @@ impl Drawing {
         let first = positions.first().unwrap();
         res.push(Gm::new(
             self.rect(
-                radius*2.0,
-                radius*2.0,
+                snake_width,
+                snake_width,
                 tail_direction.to_rotation(),
                 &first
             ),
@@ -535,11 +518,11 @@ pub fn main() {
 
     let grid_lines = d.draw_grid(state.width);
 
-    let test_state: GameState = serde_json::from_str(include_str!("../assets/test.json")).unwrap();
-    let game_state: ArcGameState = Arc::new(Mutex::new(test_state));
+    // let test_state: GameState = serde_json::from_str(include_str!("../assets/test.json")).unwrap();
+    // let game_state: ArcGameState = Arc::new(Mutex::new(test_state));
 
-    // let game_state: ArcGameState = Arc::new(Mutex::new(GameState::default()));
-    // client_thread(game_state.clone());
+    let game_state: ArcGameState = Arc::new(Mutex::new(GameState::default()));
+    client_thread(game_state.clone());
 
     let colors = vec![
         Color::BLUE,
@@ -607,12 +590,15 @@ pub fn main() {
 
         //let objects = sneks.chain(grids);
 
-
+        frame_input
+            .screen()
+            // Solarized-light background color
+            .clear(ClearState::color_and_depth(0.99, 0.96, 0.89, 1.0, 1.0));
 
         frame_input
             .screen()
             // Solarized-light background color
-            .clear(ClearState::color_and_depth(0.99, 0.96, 0.89, 1.0, 1.0))
+            //.clear(ClearState::color_and_depth(0.99, 0.96, 0.89, 1.0, 1.0))
             //.clear(ClearState::color_and_depth(0.0, 0.0, 0.0, 1.0, 1.0))
             .render(
                 &camera2d(frame_input.viewport),
@@ -626,7 +612,9 @@ pub fn main() {
                     grids,
                     &[],);
 
-        thread::sleep(Duration::from_millis(1000));
+
+
+        thread::sleep(Duration::from_millis(100));
 
         FrameOutput::default()
     });
