@@ -181,6 +181,24 @@ impl Drawing {
         let snake_width = self.grid_size_screen() * 0.8 *  self.scale_factor;
 
         let mut c = Rgb::new(base_color.r as f64, base_color.g as f64, base_color.b as f64, None);
+        c.lighten(20.0);
+
+        // If there is only a single position, we don't know in which direction the snake is facing
+        // yet. So in that case, we just draw a "this is where the snake will spawn" sprite.
+        if positions.len() == 1 {
+            let pos = positions.first().unwrap();
+            return vec![
+                Gm::new(
+                    self.rect(
+                        snake_width,
+                        snake_width,
+                        Deg(0.0),
+                        pos
+                    ),
+                    self.snake_textures.spawn(c.to_color()),
+                )
+            ];
+        }
 
         let mut res = vec![];
 
@@ -239,10 +257,6 @@ impl Drawing {
                 )
             };
 
-            // dbg!(pos);
-            // dbg!(&dir1, &dir2);
-            // println!("---");
-
             res.push(Gm::new(
                 self.rect(
                     snake_width,
@@ -254,7 +268,7 @@ impl Drawing {
             ));
 
             match (dir1, dir2) {
-                (Left | Down, Left) => {
+                (Up | Left | Down, Left) => {
                     res.push(Gm::new(
                         Rectangle::new(
                             &self.context,

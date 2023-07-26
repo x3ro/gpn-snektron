@@ -6,6 +6,7 @@ pub struct SnakeTextures {
     tail: Texture2DRef,
     left_turn: Texture2DRef,
     right_turn: Texture2DRef,
+    spawn: Texture2DRef,
 
     // tail_up: Texture2DRef,
     // tail_right: Texture2DRef,
@@ -33,27 +34,7 @@ impl SnakeTextures {
         let mut head = texture.clone();
         head.transformation =
             Matrix3::from_translation(vec2(0.6, 0.8)) *
-                Matrix3::from_scale(0.199);
-
-        // let mut head_right = texture.clone();
-        // head_right.transformation =
-        //     Matrix3::from_translation(vec2(0.8, 0.8)) *
-        //         Matrix3::from_scale(0.2);
-        //
-        // let mut head_down = texture.clone();
-        // head_down.transformation =
-        //     Matrix3::from_translation(vec2(0.8, 0.6)) *
-        //         Matrix3::from_scale(0.2);
-        //
-        // let mut head_left = texture.clone();
-        // head_left.transformation =
-        //     Matrix3::from_translation(vec2(0.6, 0.6)) *
-        //         Matrix3::from_scale(0.2);
-
-        // let mut horizontal = texture.clone();
-        // horizontal.transformation =
-        //     Matrix3::from_translation(vec2(0.2, 0.8)) *
-        //         Matrix3::from_scale(0.2);
+                Matrix3::from_scale(0.2);
 
         let mut body = texture.clone();
         body.transformation =
@@ -75,12 +56,18 @@ impl SnakeTextures {
             Matrix3::from_translation(vec2(0.4, 0.8)) *
                 Matrix3::from_scale(0.2);
 
+        let mut spawn = texture.clone();
+        spawn.transformation =
+            Matrix3::from_translation(vec2(0.0, 0.2)) *
+                Matrix3::from_scale(0.2);
+
         Self {
             head,
             body,
             tail,
             right_turn,
             left_turn,
+            spawn,
         }
     }
 
@@ -115,5 +102,9 @@ impl SnakeTextures {
 
     pub fn tail(&self, color: Color) -> ColorMaterial {
         Self::material(&self.tail, color)
+    }
+
+    pub fn spawn(&self, color: Color) -> ColorMaterial {
+        Self::material(&self.spawn, color)
     }
 }
